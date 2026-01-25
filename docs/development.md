@@ -13,7 +13,7 @@ Then
 
 ## Basic Developer Workflows
 
-The `Makefile` simply offers shortcuts to `uv` commands for developer convenience.
+The `Justfile` simply offers shortcuts to `uv` commands for developer convenience.
 (For clarity, GitHub Actions don’t use the Makefile and just call `uv` directly.)
 
 ```shell

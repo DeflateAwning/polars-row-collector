@@ -10,7 +10,6 @@ requires-python = ">=3.11,<4.0"
 dynamic = ["version"]
 
 # https://pypi.org/classifiers/
-# Adjust as needed:
 classifiers = [
     # Adjust as needed:
     "Development Status :: 4 - Beta",
@@ -24,12 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
-    # Include this to avoid accidentally publishing to PyPI:
-    # "Private :: Do Not Upload",
 ]
 
 dependencies = [
-    "polars>=1.0",
+    "polars>=1.0,<2",
 ]
 
 
@@ -117,6 +114,8 @@ ignore = [
     "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
     "COM819", # https://docs.astral.sh/ruff/rules/prohibited-trailing-comma/
     "ISC002", # https://docs.astral.sh/ruff/rules/multi-line-implicit-string-concatenation/
+    "D203",
+    "D213",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -127,35 +126,12 @@ ignore = [
 ]
 
 [tool.basedpyright]
-# BasedPyright currently seems like the best type checker option, much faster
-# than mypy and with a good extension for VSCode/Cursor.
 # https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright
-# https://docs.basedpyright.com/latest/configuration/config-files/#sample-pyprojecttoml-file
 include = ["src", "tests", "devtools"]
-# By default BasedPyright is very strict, so you almost certainly want to disable
-# some of the rules.
-# First, these turn off warnings about (yes) how you ignore warnings:
-reportIgnoreCommentWithoutRule = false
-reportUnnecessaryTypeIgnoreComment = false
-# A few typically noisy warnings are next.
-# How many you enable is up to you. The first few are off by default, but you can
-# comment/uncomment these as desired:
-reportMissingTypeStubs = false
-reportUnusedCallResult = false
-reportAny = false
-reportExplicitAny = false
-reportImplicitStringConcatenation = false
-reportUnreachable = false
-# reportPrivateImportUsage = false
-# reportPrivateLocalImportUsage = false
-# reportMissingImports = false
-# reportUnnecessaryIsInstance = false
-# reportUnknownVariableType = false
-# reportUnknownArgumentType = false
+reportExplicitAny = "none"
 
 [tool.codespell]
-# Add here as needed:
-# ignore-words-list = "foo,bar"
+ignore-words-list = "rechunk,lazyframe"
 # skip = "foo.py,bar.py"
 
 [tool.pytest.ini_options]
