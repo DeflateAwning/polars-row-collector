@@ -1,15 +1,8 @@
-# ---- Project Info and Dependencies ----
-
-[project.urls]
-Repository = "https://github.com/DeflateAwning/polars-row-collector"
-# Homepage = "https://..."
-# Documentation = "https://..."
-
 [project]
 name = "polars-row-collector"
 description = "Facade to collect rows one-by-one into a Polars DataFrame (in the least-bad way)"
 authors = [
-    { name="DeflateAwning", email="" },
+    { name="DeflateAwning", email="11021263+DeflateAwning@users.noreply.github.com" },
 ]
 readme = "README.md"
 license = "MIT"
@@ -35,10 +28,8 @@ classifiers = [
     # "Private :: Do Not Upload",
 ]
 
-
-# ---- Main dependencies ----
-
 dependencies = [
+    "polars>=1.0",
 ]
 
 
@@ -55,10 +46,10 @@ dev = [
     "funlog>=0.2.1",
 ]
 
-[project.scripts]
-# Add script entry points here:
-polars-row-collector = "polars-row-collector:main"
 
+[project.urls]
+Repository = "https://github.com/DeflateAwning/polars-row-collector"
+# Documentation = "https://..." # TODO.
 
 # ---- Build system ----
 
@@ -88,8 +79,7 @@ packages = ["src/polars-row-collector"]
 # ---- Settings ----
 
 [tool.ruff]
-# Set as desired, typically 88 (black standard) or 100 (wide).
-line-length = 100
+line-length = 88
 
 [tool.ruff.lint]
 select = [
@@ -101,10 +91,10 @@ select = [
     "B", # https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
     "I", # https://docs.astral.sh/ruff/rules/#isort-i
     # Other possibilities:
-    # "D" # https://docs.astral.sh/ruff/rules/#pydocstyle-d
-    # "Q" # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
-    # "COM" # https://docs.astral.sh/ruff/rules/#flake8-commas-com
-    # "SIM", # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "D", # https://docs.astral.sh/ruff/rules/#pydocstyle-d
+    "Q", # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
+    "COM", # https://docs.astral.sh/ruff/rules/#flake8-commas-com
+    "SIM", # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
 
 ]
 ignore = [
@@ -127,6 +117,13 @@ ignore = [
     "COM812", # https://docs.astral.sh/ruff/rules/missing-trailing-comma/
     "COM819", # https://docs.astral.sh/ruff/rules/prohibited-trailing-comma/
     "ISC002", # https://docs.astral.sh/ruff/rules/multi-line-implicit-string-concatenation/
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    # Disable some rules in tests that are too pedantic. Add/remove as desired:
+    "D", # Docstring rules
+    "S101", # Asserts.
 ]
 
 [tool.basedpyright]
