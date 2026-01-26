@@ -56,3 +56,13 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
+      - name: Build docs
+        run: uv run mkdocs build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        # Most only upload from a single (arbitrary) matrix runner.
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        with:
+          path: './site'
