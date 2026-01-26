@@ -1,8 +1,21 @@
 # polars-row-collector
 
+![PyPI](https://img.shields.io/pypi/v/polars-row-collector)
+![Python](https://img.shields.io/pypi/pyversions/polars-row-collector)
+![License](https://img.shields.io/github/license/DeflateAwning/polars-row-collector)
+![CI](https://img.shields.io/github/actions/workflow/status/DeflateAwning/polars-row-collector/ci.yml?label=tests)
+![Docs](https://img.shields.io/badge/docs-online-blue)
+![Built for Polars](https://img.shields.io/badge/built%20for-polars-4B8BBE)
+
 Facade to collect rows one-by-one into a Polars DataFrame (in the least-bad way)
 
+* **Docs:** https://DeflateAwning.github.io/polars-row-collector  
+* **GitHub:** https://github.com/DeflateAwning/polars-row-collector  
+* **PyPI:** https://pypi.org/project/polars-row-collector/
+
 ## Getting Started Example
+
+Add the library to your dependencies: `uv add polars_row_collector`
 
 ```python
 import polars as pl
