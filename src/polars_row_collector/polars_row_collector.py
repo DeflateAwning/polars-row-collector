@@ -4,7 +4,7 @@ from collections.abc import Iterable, Sequence
 from typing import Any, Literal
 
 import polars as pl
-from polars._typing import SchemaDict
+from polars._typing import PolarsDataType, SchemaDict
 
 
 class PolarsRowCollector:
@@ -75,14 +75,25 @@ class PolarsRowCollector:
         )
         self._if_extra_columns: Literal["drop_extra", "raise"] = if_extra_columns
 
-        self._pl_schema: SchemaDict | None
+        # These two internal-tracking schema variables must be assigned together.
+        # They are separate because certain non-Python types must be parsed as a similar equivalent
+        # type, and then must be converted to a normal type after (e.g., Enum parsed as String then cast).
+        self._pl_schema: dict[str, PolarsDataType] | None
+        self._pl_parse_schema: dict[str, PolarsDataType] | None
         match schema:
-            case dict():  # SchemaDict
-                self._pl_schema = schema
             case "infer_from_first_chunk":
                 self._pl_schema = None
+                self._pl_parse_schema = None
+            case dict():  # SchemaDict
+                self._pl_schema = schema
+                self._pl_parse_schema = _convert_precise_schema_to_python_parse_schema(
+                    schema
+                )
             case _:
-                raise ValueError(f"Invalid schema value: {schema}")
+                self._pl_schema = dict(schema)
+                self._pl_parse_schema = _convert_precise_schema_to_python_parse_schema(
+                    self._pl_schema
+                )
 
         self._accumulated_rows: list[dict[str, Any]] = []
         self._collected_dfs: list[pl.DataFrame] = []
@@ -166,15 +177,20 @@ class PolarsRowCollector:
 
         df = pl.DataFrame(
             self._accumulated_rows,
-            schema=self._pl_schema,
-            infer_schema_length=None,  # Use all rows, if necessary.
+            schema=self._pl_parse_schema,
+            infer_schema_length=None,  # Use all rows, if necessary (when schema=None).
         )
+        if self._pl_schema is not None:
+            df = df.cast(self._pl_schema)  # pyright: ignore[reportArgumentType]
 
         # Store the schema after the first chunk, and use it on all subsequent chunks. Improves
         # performance. Removing this would allow each chunk to have a different schema, which ends
         # up causing an error during `pl.concat()` operation anyway.
         if self._pl_schema is None:
-            self._pl_schema = df.schema
+            self._pl_schema = dict(df.schema)
+            self._pl_parse_schema = _convert_precise_schema_to_python_parse_schema(
+                df.schema
+            )
 
         self._collected_dfs.append(df)
         self._accumulated_rows = []
@@ -222,3 +238,30 @@ class PolarsRowCollector:
             return df.lazy()
         else:
             return pl.DataFrame(schema=self._pl_schema).lazy()
+
+
+def _convert_precise_type_to_python_parse_type(dtype: PolarsDataType) -> PolarsDataType:
+    """Convert a precise intended schema to a schema which can map to Python objects.
+
+    Required because: https://github.com/pola-rs/polars/issues/26282.
+    """
+    if isinstance(dtype, pl.Enum):
+        return pl.String
+    if isinstance(dtype, pl.Float32) or (dtype == pl.Float32):
+        return pl.Float64
+
+    bad_int_types = (pl.UInt8, pl.Int8, pl.UInt16, pl.Int16, pl.UInt32, pl.Int32)
+    if isinstance(dtype, bad_int_types) or (dtype in bad_int_types):  # pyright: ignore[reportUnnecessaryContains]
+        return pl.Int64
+
+    return dtype
+
+
+def _convert_precise_schema_to_python_parse_schema(
+    schema: SchemaDict,
+) -> dict[str, PolarsDataType]:
+    """Convert a precise intended schema to a schema which can map to Python objects.
+
+    Required because: https://github.com/pola-rs/polars/issues/26282.
+    """
+    return {k: _convert_precise_type_to_python_parse_type(v) for k, v in schema.items()}
