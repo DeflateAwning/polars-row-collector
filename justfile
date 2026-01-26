@@ -10,9 +10,9 @@ install:
     uv sync --all-extras
 
 lint:
-    ruff check --fix .
-    ruff format .
-    basedpyright .
+    uv run ruff check --fix .
+    uv run ruff format .
+    uv run basedpyright .
 
 test:
     uv run pytest

@@ -50,9 +50,9 @@ jobs:
 
       - name: Run linting
         run: |
-          ruff check .
-          ruff format --check .
-          basedpyright .
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run basedpyright .
 
       - name: Run tests
         run: uv run pytest
