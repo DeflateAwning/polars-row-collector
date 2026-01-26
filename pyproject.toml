@@ -106,8 +106,6 @@ ignore = [
     "E111", # https://docs.astral.sh/ruff/rules/indentation-with-invalid-multiple/
     "E114", # https://docs.astral.sh/ruff/rules/indentation-with-invalid-multiple-comment/
     "E117", # https://docs.astral.sh/ruff/rules/over-indented/
-    "D206", # https://docs.astral.sh/ruff/rules/docstring-tab-indentation/
-    "D300", # https://docs.astral.sh/ruff/rules/triple-single-quotes/
     "Q000", # https://docs.astral.sh/ruff/rules/bad-quotes-inline-string/
     "Q001", # https://docs.astral.sh/ruff/rules/bad-quotes-multiline-string/
     "Q002", # https://docs.astral.sh/ruff/rules/bad-quotes-docstring/

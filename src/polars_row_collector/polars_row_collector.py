@@ -10,7 +10,7 @@ from polars._typing import PolarsDataType, SchemaDict
 class PolarsRowCollector:
     """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
 
-    Strongly recommended to provide a schema for best performance. If no schema is provided,
+    Strongly recommended to provide an explicit schema. If no schema is provided,
     the schema will be inferred from the first chunk of rows added.
 
     Example:
@@ -44,7 +44,7 @@ class PolarsRowCollector:
     ) -> None:
         """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
 
-        Strongly recommended to provide a schema for best performance. If no schema is provided,
+        Strongly recommended to provide an explicit schema. If no schema is provided,
         the schema will be inferred from the first chunk of rows added.
 
         Example:
@@ -60,6 +60,21 @@ class PolarsRowCollector:
 
             df = collector.to_df()
             ```
+
+        Args:
+            schema: The schema to use for the DataFrame, or `"infer_from_first_chunk"`
+                to infer from the first chunk. It is strongly recommended to provide an explicit schema.
+            collect_chunk_size: Number of rows to accumulate before converting to a DataFrame chunk.
+            maintain_insert_order: Whether to maintain the order of inserted rows.
+                Note: While `PolarsRowCollector` currently always returns the rows in order,
+                the presence of this argument allows for future optimizations where the rows
+                are NOT returned in order. Explicitly set to `True` if you want to maintain the
+                current behaviour forever.
+            if_missing_columns: How to handle missing columns in input rows (`"set_missing_to_null"`
+                or `"raise"`).
+                Note: `"set_missing_to_null"` is currently slightly more performant.
+            if_extra_columns: How to handle extra columns in input rows (`"drop_extra"` or `"raise"`).
+                Note: `"drop_extra"` is currently slightly more performant.
 
         """
         if collect_chunk_size <= 0:
@@ -88,6 +103,13 @@ class PolarsRowCollector:
     def _set_new_schema(
         self, pl_storage_schema: SchemaDict | Literal["infer_from_first_chunk"]
     ) -> None:
+        """Set the internal schema for storage and parsing.
+
+        Args:
+            pl_storage_schema: The schema to use for storage, or `"infer_from_first_chunk"`
+                to infer from the first chunk.
+
+        """
         if (self._pl_parse_schema is not None) or (self._pl_storage_schema is not None):
             raise RuntimeError(
                 "This method is meant to only be run exactly once when setting a new schema."
@@ -172,7 +194,7 @@ class PolarsRowCollector:
         discarded.
 
         Args:
-            rows: A sequence of dictionaries, each representing a row.
+            rows: A sequence or iterable of dictionaries, each representing a row.
 
         """
         if self._is_finalized:
@@ -221,6 +243,9 @@ class PolarsRowCollector:
 
         Finalizes the collector, preventing further rows from being added.
 
+        Args:
+            rechunk: Whether to rechunk the resulting DataFrame for contiguous memory.
+
         Returns:
             A Polars DataFrame containing all collected rows.
 
@@ -245,8 +270,13 @@ class PolarsRowCollector:
 
         Does NOT finalize the collector, allowing further rows to be added.
 
+        Args:
+            rechunk: Whether to rechunk the resulting DataFrame for contiguous memory.
+
         Returns:
-            A Polars LazyFrame containing all collected rows.
+            A Polars LazyFrame containing all collected rows. No guarantees are made about
+            how long the LazyFrame remains valid. It is recommended to fetch and consume
+            the LazyFrame in the same scope as the `PolarsRowCollector`.
 
         """
         if self._is_finalized:
@@ -265,6 +295,13 @@ def _convert_precise_type_to_python_parse_type(dtype: PolarsDataType) -> PolarsD
     """Convert a precise intended schema to a schema which can map to Python objects.
 
     Required because: https://github.com/pola-rs/polars/issues/26282.
+
+    Args:
+        dtype: The Polars data type to convert.
+
+    Returns:
+        The converted Polars data type suitable for Python parsing.
+
     """
     if isinstance(dtype, pl.Enum):
         return pl.String
@@ -284,5 +321,12 @@ def _convert_precise_schema_to_python_parse_schema(
     """Convert a precise intended schema to a schema which can map to Python objects.
 
     Required because: https://github.com/pola-rs/polars/issues/26282.
+
+    Args:
+        schema: The schema dictionary to convert.
+
+    Returns:
+        A dictionary mapping column names to converted Polars data types suitable for Python parsing.
+
     """
     return {k: _convert_precise_type_to_python_parse_type(v) for k, v in schema.items()}
