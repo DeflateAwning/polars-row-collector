@@ -1,7 +1,7 @@
 """Facade to collect rows one-by-one into a Polars DataFrame (in the least-bad way)."""
 
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import Any, Literal
 
 import polars as pl
 from polars._typing import SchemaDict
@@ -33,15 +33,22 @@ class PolarsRowCollector:
     """
 
     def __init__(
-        self, schema: SchemaDict | None = None, *, collect_chunk_size: int = 25_000
+        self,
+        # TODO: Add schema modes: "concat_diagonal_strict", "concat_diagonal_relaxed"
+        schema: SchemaDict
+        | Literal["infer_from_first_chunk"] = "infer_from_first_chunk",
+        *,
+        collect_chunk_size: int = 25_000,
+        maintain_insert_order: bool = False,
+        if_missing_columns: Literal[
+            "set_missing_to_null", "raise"
+        ] = "set_missing_to_null",
+        if_extra_columns: Literal["drop_extra", "raise"] = "drop_extra",
     ) -> None:
         """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
 
-        Maintains the order the rows were added.
-
         Strongly recommended to provide a schema for best performance. If no schema is provided,
-        the schema will be inferred from the first chunk of rows added. Note that extra columns added
-        afterwards that were not in the schema will be silently discarded!
+        the schema will be inferred from the first chunk of rows added.
 
         Example:
             ```python
@@ -63,8 +70,19 @@ class PolarsRowCollector:
             raise ValueError(msg)
 
         self.collect_chunk_size: int = collect_chunk_size
+        self._if_missing_columns: Literal["set_missing_to_null", "raise"] = (
+            if_missing_columns
+        )
+        self._if_extra_columns: Literal["drop_extra", "raise"] = if_extra_columns
 
-        self._pl_schema: SchemaDict | None = schema
+        self._pl_schema: SchemaDict | None
+        match schema:
+            case dict():  # SchemaDict
+                self._pl_schema = schema
+            case "infer_from_first_chunk":
+                self._pl_schema = None
+            case _:
+                raise ValueError(f"Invalid schema value: {schema}")
 
         self._accumulated_rows: list[dict[str, Any]] = []
         self._collected_dfs: list[pl.DataFrame] = []
@@ -84,6 +102,30 @@ class PolarsRowCollector:
         if self._is_finalized:
             msg = "Cannot add rows to a finalized PolarsRowCollector."
             raise RuntimeError(msg)
+
+        # Validate missing columns.
+        if (self._if_missing_columns == "raise") and (self._pl_schema is not None):
+            missing_columns = sorted(set(self._pl_schema.keys()) - set(row.keys()))
+            if missing_columns:
+                msg = (
+                    f"Trying to add a row with {len(missing_columns)} missing columns. "
+                    'PolarsRowCollector is configured with if_missing_columns="raise". '
+                    f"Missing columns: {missing_columns}"
+                )
+                raise ValueError(msg)
+            del missing_columns
+
+        # Validate extra columns.
+        if (self._if_extra_columns == "raise") and (self._pl_schema is not None):
+            extra_columns = sorted(set(row.keys()) - set(self._pl_schema.keys()))
+            if extra_columns:
+                msg = (
+                    f"Trying to add a row with {len(extra_columns)} extra columns. "
+                    'PolarsRowCollector is configured with if_extra_columns="raise". '
+                    f"Extra columns: {extra_columns}"
+                )
+                raise ValueError(msg)
+            del extra_columns
 
         self._accumulated_rows.append(row)
         if len(self._accumulated_rows) >= self.collect_chunk_size:
@@ -106,7 +148,15 @@ class PolarsRowCollector:
             raise RuntimeError(msg)
 
         # TODO: This function can be optimized to immediately convert to DataFrame if the `rows` is large enough.
-        self._accumulated_rows.extend(rows)
+        if (self._if_extra_columns == "drop_extra") and (
+            self._if_missing_columns == "set_missing_to_null"
+        ):
+            self._accumulated_rows.extend(rows)
+        else:
+            # Must use `self.add_row` for now to validate each row individually.
+            for row in rows:
+                self.add_row(row)
+
         if len(self._accumulated_rows) >= self.collect_chunk_size:
             self._flush_accumulated_rows()
 
