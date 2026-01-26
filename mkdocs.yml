@@ -29,6 +29,9 @@ plugins:
           options:
             docstring_style: google
             show_source: true
+            show_signature: true
+            show_signature_annotations: true
+            separate_signature: true
 
 markdown_extensions:
   - pymdownx.highlight
