@@ -4,8 +4,6 @@ Facade to collect rows one-by-one into a Polars DataFrame (in the least-bad way)
 
 ## Getting Started Example
 
-In the following example, you can think of `collector` as a `list_of_dfs: list[pl.DataFrame]`.
-
 ```python
 import polars as pl
 from polars_row_collector import PolarsRowCollector
@@ -25,10 +23,12 @@ for item in items:
 df = collector.to_df()
 ```
 
+You can think of `collector` as filling the same niche as a `list_of_dfs: list[pl.DataFrame]`.
+
 ## Features
 
 * Highly performant and memory-optimized.
-    * Much more-so than collecting into a `list[dict]` or 
+    * Much more-so than collecting into a `list[dict[str, Any]]` or concatenating one-row dataframes.
 * Optionally supply a schema for the incoming rows.
 * Thread-safe (when GIL is enabled - default in Python <= 3.15).
 
@@ -55,4 +55,4 @@ As the project's description says, this is the "least-bad way" to accomplish thi
 
 If you can implement your code in such a way that you're not collecting individual rows of a dataframe, you are likely better-off doing it that way (e.g., collecting a `list[pl.DataFrame]`).
 
-However, there are always exceptions to the best practices, and this library is significantly more efficient (performance and memory) than collecting into a `list[dicts]`.
+However, there are always exceptions to the best practices, and this library is significantly more efficient (performance and memory) than collecting into a `list[dict[str, Any]]`.
