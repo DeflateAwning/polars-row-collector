@@ -36,7 +36,6 @@ markdown_extensions:
   - admonition
   - pymdownx.details
 
-docs_dir: .  # Look in repo root
 nav:
-  - Home: README.md  # Use README.md instead
-  - API Reference: docs/api.md
+  - Home: index.md
+  - API Reference: api.md
