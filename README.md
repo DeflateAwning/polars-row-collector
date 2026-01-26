@@ -1,5 +1,11 @@
 # polars-row-collector
 
+![PyPI](https://img.shields.io/pypi/v/polars-row-collector)
+![Python](https://img.shields.io/pypi/pyversions/polars-row-collector)
+![License](https://img.shields.io/github/license/DeflateAwning/polars-row-collector)
+![CI](https://img.shields.io/github/actions/workflow/status/DeflateAwning/polars-row-collector/ci.yml?label=tests)
+![Docs](https://img.shields.io/badge/docs-online-blue)
+
 Facade to collect rows one-by-one into a Polars DataFrame (in the least-bad way)
 
 ## Getting Started Example
