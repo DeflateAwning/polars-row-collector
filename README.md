@@ -31,6 +31,10 @@ You can think of `collector` as filling the same niche as a `list_of_dfs: list[p
     * Much more-so than collecting into a `list[dict[str, Any]]` or concatenating one-row dataframes.
 * Optionally supply a schema for the incoming rows.
 * Thread-safe (when GIL is enabled - default in Python <= 3.15).
+* Configuration arguments for safety vs. performance tradeoffs:
+    * Behaviour if there are missing columns: Enforce all columns present or allow missing columns.
+    * Behaviour if there are extra columns: Drop silently or raise.
+    * Maintain insertion order.
 
 ## Example Applications
 
@@ -42,10 +46,6 @@ You can think of `collector` as filling the same niche as a `list_of_dfs: list[p
 
 * Intermediate to-disk storage to temporary parquet files to larger-than-memory collections.
 * Further optimize appending many rows at once.
-* Better configuration:
-    * Behaviour if there are missing columns: Enforce all columns present or allow missing columns
-    * Behaviour if there are extra columns: Drop silently or raise.
-    * Maintain order.
 * Read the dataframe so-far, in the middle of gathering rows.
 * Documentation.
 

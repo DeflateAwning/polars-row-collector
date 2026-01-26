@@ -114,8 +114,10 @@ def test_adding_after_finalization_does_not_change_result() -> None:
 
 
 @pytest.mark.parametrize("chunk_size", [1, 10, 1000, 5000, 25_000, 150_000])
-@pytest.mark.parametrize("rechunk", [True, False])
-@pytest.mark.parametrize("include_schema", [True, False])
+@pytest.mark.parametrize("rechunk", [True, False], ids=["rechunk", "no_rechunk"])
+@pytest.mark.parametrize(
+    "include_schema", [True, False], ids=["with_schema", "without_schema"]
+)
 @pytest.mark.parametrize("add_rows_method", ["add_row", "add_rows"])
 @pytest.mark.parametrize("collect_method", ["dataframe", "lazyframe"])
 @pytest.mark.parametrize("number_of_rows", [1, 100_000])
@@ -131,10 +133,11 @@ def test_giant_grid(
     if bool(os.getenv("CI")) and (number_of_rows >= 100_000) and (chunk_size <= 100):
         pytest.skip("Skipping very large test on CI with small chunk size for speed.")
 
-    schema: SchemaDict | None = (
-        {"x": pl.Int64, "y": pl.String} if include_schema else None
+    schema: SchemaDict = {"x": pl.Int64, "y": pl.String}
+    schema_arg: SchemaDict | Literal["infer_from_first_chunk"] = (
+        schema if include_schema else "infer_from_first_chunk"
     )
-    c = PolarsRowCollector(collect_chunk_size=chunk_size, schema=schema)
+    c = PolarsRowCollector(collect_chunk_size=chunk_size, schema=schema_arg)
 
     rows = [{"x": i, "y": f"Row {i}"} for i in range(number_of_rows)]
 
