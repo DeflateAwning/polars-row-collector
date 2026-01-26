@@ -51,7 +51,7 @@ dev = [
 
 [project.urls]
 Repository = "https://github.com/DeflateAwning/polars-row-collector"
-# Documentation = "https://..." # TODO.
+Documentation = "https://DeflateAwning.github.io/polars-row-collector"
 
 # ---- Build system ----
 
