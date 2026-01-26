@@ -68,11 +68,6 @@ vcs = "git"
 style = "pep440"
 bump = true
 
-[tool.hatch.build.targets.wheel]
-# The source location for the package.
-packages = ["src/polars-row-collector"]
-
-
 # ---- Settings ----
 
 [tool.ruff]
@@ -120,14 +115,13 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    # Disable some rules in tests that are too pedantic. Add/remove as desired:
     "D", # Docstring rules
     "S101", # Asserts.
 ]
 
 [tool.basedpyright]
 # https://marketplace.visualstudio.com/items?itemName=detachhead.basedpyright
-include = ["src", "tests", "devtools"]
+include = ["src", "tests"]
 reportExplicitAny = "none"
 
 [tool.codespell]
@@ -135,12 +129,4 @@ ignore-words-list = "rechunk,lazyframe"
 # skip = "foo.py,bar.py"
 
 [tool.pytest.ini_options]
-python_files = ["*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-testpaths = [
-    "src",
-    "tests",
-]
-norecursedirs = []
 filterwarnings = []
