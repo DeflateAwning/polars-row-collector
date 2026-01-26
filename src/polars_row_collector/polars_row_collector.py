@@ -10,11 +10,8 @@ from polars._typing import PolarsDataType, SchemaDict
 class PolarsRowCollector:
     """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
 
-    Maintains the order the rows were added.
-
     Strongly recommended to provide a schema for best performance. If no schema is provided,
-    the schema will be inferred from the first chunk of rows added. Note that extra columns added
-    afterwards that were not in the schema will be silently discarded!
+    the schema will be inferred from the first chunk of rows added.
 
     Example:
         ```python

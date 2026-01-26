@@ -1,4 +1,4 @@
-name: Publish to PyPI
+name: Publish Package and Docs
 
 on:
   release:
@@ -11,14 +11,15 @@ jobs:
     permissions:
       id-token: write # Mandatory for OIDC.
       contents: read
+      pages: write  # Deploy docs to GitHub Pages.
     steps:
-      - name: Checkout (official GitHub action)
+      - name: Checkout
         uses: actions/checkout@v6
         with:
           # Important for versioning plugins:
           fetch-depth: 0
 
-      - name: Install uv (official Astral action)
+      - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.25"
@@ -33,6 +34,21 @@ jobs:
 
       - name: Run tests
         run: uv run pytest
+
+      - name: Build docs
+        run: uv run mkdocs build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Build package
         run: uv build
