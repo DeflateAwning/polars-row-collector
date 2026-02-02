@@ -7,8 +7,6 @@ from typing import Any, Never
 import polars as pl
 from tqdm import tqdm
 
-from polars_row_collector.polars_row_collector import PolarsRowCollector
-
 TOTAL_ROWS = int(float(os.getenv("TOTAL_ROWS", "1e6")))
 CHUNK_SIZE = int(float(os.getenv("CHUNK_SIZE", "25e3")))
 REPORT_EVERY = int(float(os.getenv("REPORT_EVERY", "1e6")))
@@ -34,14 +32,7 @@ def main():
     else:
         print("GC left enabled")
 
-    collector = PolarsRowCollector(
-        schema={
-            "a": pl.Int64,
-            "b": pl.Float64,
-            "c": pl.String,
-        },
-        collect_chunk_size=CHUNK_SIZE,
-    )
+    collector: list[dict[str, Any]] = []
 
     gen = row_generator()
 
@@ -56,7 +47,7 @@ def main():
     last_rows = 0
 
     for i in iterator:
-        collector.add_row(next(gen))
+        collector.append(next(gen))
 
         if i % REPORT_EVERY == 0:
             now = time.perf_counter()
@@ -74,7 +65,7 @@ def main():
 
     print("\nFinalizing DataFrame...")
     t0 = time.perf_counter()
-    df = collector.to_df()
+    df = pl.DataFrame(collector)
     t1 = time.perf_counter()
 
     print(f"Final concat time: {t1 - t0:.2f}s")
