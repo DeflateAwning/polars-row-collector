@@ -67,7 +67,7 @@ class PolarsRowCollector:
                 to infer from the first chunk. It is strongly recommended to provide an explicit schema.
             collect_chunk_size: Number of rows to accumulate before converting to a DataFrame chunk.
             maintain_insert_order: Whether to maintain the order of inserted rows.
-                Note: While `PolarsRowCollector` currently always returns the rows in order,
+                Note: While `PolarsRowCollector` currently nearly-always returns the rows in order of insertion,
                 the presence of this argument allows for future optimizations where the rows
                 are NOT returned in order. Explicitly set to `True` if you want to maintain the
                 current behaviour forever.
@@ -94,6 +94,7 @@ class PolarsRowCollector:
             if_missing_columns
         )
         self._if_extra_columns: Literal["drop_extra", "raise"] = if_extra_columns
+        self.maintain_insert_order: bool = maintain_insert_order
 
         # These two internal-tracking schema variables must be assigned together.
         # They are separate because certain non-Python types must be parsed as a similar equivalent
@@ -213,9 +214,15 @@ class PolarsRowCollector:
         if (self._if_extra_columns == "drop_extra") and (
             self._if_missing_columns == "set_missing_to_null"
         ):
-            self._accumulated_rows.extend(rows)
+            # If we promise to maintain insert order, then we must flush here, and then
+            # we can continue extending the list. Otherwise, doesn't matter.
+            if self.maintain_insert_order is True:
+                self._flush_accumulated_rows()
+
+            self._add_rows_to_accumulator(rows)
         else:
             # Must use `self.add_row` for now to validate each row individually.
+            # TODO: Low-hanging fruit here to optimize.
             for row in rows:
                 self.add_row(row)
 
@@ -226,8 +233,15 @@ class PolarsRowCollector:
         if not self._accumulated_rows:
             return
 
+        self._add_rows_to_accumulator(self._accumulated_rows)
+
+        self._accumulated_rows = []
+
+    def _add_rows_to_accumulator(
+        self, rows: Sequence[dict[str, Any]] | Iterable[dict[str, Any]]
+    ) -> None:
         df = pl.DataFrame(
-            self._accumulated_rows,
+            rows,
             schema=self._pl_parse_schema,
             infer_schema_length=None,  # Use all rows, if necessary (when schema=None).
         )
@@ -254,8 +268,6 @@ class PolarsRowCollector:
             and len(self._collected_dfs) >= self.recollect_df_list_size
         ):
             self._collected_dfs = [pl.concat(self._collected_dfs)]
-
-        self._accumulated_rows = []
 
     def to_df(self, *, rechunk: bool = False) -> pl.DataFrame:
         """Convert the collected rows to a Polars DataFrame.
