@@ -135,6 +135,31 @@ def main():
     )
     print(f"Final overall time per row: {1e6 * (t1 - start) / TOTAL_ROWS:.2f}µs/row")
 
+    # Additional GC after this step is mostly for interest/confirmation,
+    # and is not part of the core benchmark promises of this library.
+
+    _ = gc.collect()
+
+    rss_bytes = process.memory_info().rss  # pyright: ignore[reportAny]
+    peak_rss_bytes = max(peak_rss_bytes, rss_bytes)
+    print(
+        "\nRan GC: "
+        + f"Current RSS: {rss_bytes / (1024**2):,.2f} MiB | "
+        + f"Peak RSS: {peak_rss_bytes / (1024**2):,.2f} MiB"
+    )
+
+    if collect_mode == "dicts":
+        del list_of_dicts  # pyright: ignore[reportPossiblyUnboundVariable]
+        _ = gc.collect()
+
+        rss_bytes = process.memory_info().rss  # pyright: ignore[reportAny]
+        peak_rss_bytes = max(peak_rss_bytes, rss_bytes)
+        print(
+            "\nRan 'del list_of_dicts' and ran GC: "
+            + f"Current RSS: {rss_bytes / (1024**2):,.2f} MiB | "
+            + f"Peak RSS: {peak_rss_bytes / (1024**2):,.2f} MiB"
+        )
+
     if DISABLE_GC:
         gc.enable()
         _ = gc.collect()
