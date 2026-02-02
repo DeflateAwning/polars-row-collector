@@ -57,6 +57,9 @@ jobs:
       - name: Run tests
         run: uv run pytest
 
+      - name: Run benchmark scripts
+        run: uv run perf_scripts/perf_test_script.py
+
       - name: Build docs
         run: uv run mkdocs build
 
