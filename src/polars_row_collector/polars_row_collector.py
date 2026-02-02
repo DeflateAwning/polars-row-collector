@@ -41,6 +41,7 @@ class PolarsRowCollector:
             "set_missing_to_null", "raise"
         ] = "set_missing_to_null",
         if_extra_columns: Literal["drop_extra", "raise"] = "drop_extra",
+        recollect_df_list_size: int | None = 4096,
     ) -> None:
         """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
 
@@ -75,13 +76,20 @@ class PolarsRowCollector:
                 Note: `"set_missing_to_null"` is currently slightly more performant.
             if_extra_columns: How to handle extra columns in input rows (`"drop_extra"` or `"raise"`).
                 Note: `"drop_extra"` is currently slightly more performant.
+            recollect_df_list_size: Number of DataFrames to accumulate before recollecting into fewer DataFrames.
+                Set to 0 or None to disable recollection.
 
         """
         if collect_chunk_size <= 0:
             msg = "collect_chunk_size must be a positive integer."
             raise ValueError(msg)
 
+        if (recollect_df_list_size is not None) and (recollect_df_list_size < 0):
+            msg = "recollect_df_list_size must be an integer, or 0/None to disable recollection."
+            raise ValueError(msg)
+
         self.collect_chunk_size: int = collect_chunk_size
+        self.recollect_df_list_size: int | None = recollect_df_list_size
         self._if_missing_columns: Literal["set_missing_to_null", "raise"] = (
             if_missing_columns
         )
@@ -236,6 +244,17 @@ class PolarsRowCollector:
             self._set_new_schema(pl_storage_schema=df.schema)
 
         self._collected_dfs.append(df)
+
+        # Squash down (recollect) collected DataFrames to avoid excessive memory usage from
+        # maintaining separate schemas, list allocations, etc.
+        # This is rarely a benefit, except in extremely long-running loops, or in cases where
+        # `add_rows()` or `add_df()` are used frequently.
+        if (
+            self.recollect_df_list_size
+            and len(self._collected_dfs) >= self.recollect_df_list_size
+        ):
+            self._collected_dfs = [pl.concat(self._collected_dfs)]
+
         self._accumulated_rows = []
 
     def to_df(self, *, rechunk: bool = False) -> pl.DataFrame:
