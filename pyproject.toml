@@ -42,6 +42,7 @@ dev = [
     "rich>=14.2.0",
     "basedpyright>=1.37.1",
     "tqdm>=4.67.2",
+    "psutil>=7.2.2",
     
     # Docs:
     "mkdocs>=1.5.0",
