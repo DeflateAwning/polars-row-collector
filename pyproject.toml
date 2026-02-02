@@ -41,6 +41,7 @@ dev = [
     "codespell>=2.4.1",
     "rich>=14.2.0",
     "basedpyright>=1.37.1",
+    "tqdm>=4.67.2",
     
     # Docs:
     "mkdocs>=1.5.0",
@@ -120,6 +121,11 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
+    "D", # Docstring rules
+    "S101", # Asserts.
+]
+
+"perf_scripts/*" = [
     "D", # Docstring rules
     "S101", # Asserts.
 ]
