@@ -37,10 +37,8 @@ class PolarsRowCollector:
         *,
         collect_chunk_size: int = 25_000,
         maintain_insert_order: bool = False,
-        if_missing_columns: Literal[
-            "set_missing_to_null", "raise"
-        ] = "set_missing_to_null",
-        if_extra_columns: Literal["drop_extra", "raise"] = "drop_extra",
+        if_missing_columns: Literal["set_missing_to_null", "raise"] = "raise",
+        if_extra_columns: Literal["drop_extra", "raise"] = "raise",
         recollect_df_list_size: int | None = 4096,
     ) -> None:
         """Facade to collect rows into a Polars DataFrame in a memory-efficient manner.
