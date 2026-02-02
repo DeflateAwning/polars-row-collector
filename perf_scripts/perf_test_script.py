@@ -64,6 +64,7 @@ def main():
         collect_mode = "prc"
     else:
         raise ValueError(f"Invalid COLLECT_MODE: {COLLECT_MODE}.")
+    print(f"Using collect_mode={collect_mode!r}")
 
     gen = row_generator()
 
@@ -96,7 +97,7 @@ def main():
             print(
                 f"\nRows: {i:,} | "  # pyright: ignore[reportImplicitStringConcatenation]
                 f"{rows / dt:,.0f} rows/sec | "
-                f"{(dt / rows) * 1e6:,.1f} µs/row | "
+                f"{(dt / rows) * 1e6:,.2f} µs/row | "
                 f"Current RSS: {rss_bytes / (1024**2):,.2f} MiB | "
                 f"Peak RSS: {peak_rss_bytes / (1024**2):,.2f} MiB"
             )
@@ -132,7 +133,7 @@ def main():
         + f"Current RSS: {rss_bytes / (1024**2):,.2f} MiB | "
         + f"Peak RSS: {peak_rss_bytes / (1024**2):,.2f} MiB"
     )
-    print(f"Final overall time per row: {1e6 * (t1 - start) / TOTAL_ROWS:.6f}µs")
+    print(f"Final overall time per row: {1e6 * (t1 - start) / TOTAL_ROWS:.2f}µs/row")
 
     if DISABLE_GC:
         gc.enable()
