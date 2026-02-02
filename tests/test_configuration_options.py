@@ -17,10 +17,17 @@ if TYPE_CHECKING:
 # ============================================================================
 
 
-def test_missing_columns_set_to_null_default_behavior() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_set_to_null(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """Default behavior should set missing columns to null."""
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String, "c": pl.Float64}
-    c = PolarsRowCollector(schema=schema)
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns="set_missing_to_null",
+        if_extra_columns=if_extra_columns,
+    )
 
     c.add_row({"a": 1})  # missing b, c
     c.add_row({"a": 2, "b": "hello"})  # missing c
@@ -40,11 +47,17 @@ def test_missing_columns_set_to_null_default_behavior() -> None:
     assert_frame_equal(df, expected)
 
 
-def test_missing_columns_set_to_null_explicit() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_set_to_null_explicit(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """Explicitly setting if_missing_columns to set_missing_to_null."""
     schema: SchemaDict = {"x": pl.Int64, "y": pl.Int64}
-    c = PolarsRowCollector(schema=schema, if_missing_columns="set_missing_to_null")
-
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns="set_missing_to_null",
+        if_extra_columns=if_extra_columns,
+    )
     c.add_row({"x": 10})  # missing y
     c.add_row({"y": 20})  # missing x
 
@@ -58,10 +71,15 @@ def test_missing_columns_set_to_null_explicit() -> None:
     assert_frame_equal(df, expected)
 
 
-def test_missing_columns_raise_with_add_row() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_raise_with_add_row(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """if_missing_columns='raise' should raise ValueError when columns are missing."""
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String}
-    c = PolarsRowCollector(schema=schema, if_missing_columns="raise")
+    c = PolarsRowCollector(
+        schema=schema, if_missing_columns="raise", if_extra_columns=if_extra_columns
+    )
 
     # Adding a complete row should work
     c.add_row({"a": 1, "b": "test"})
@@ -75,11 +93,15 @@ def test_missing_columns_raise_with_add_row() -> None:
         c.add_row({"a": 3})
 
 
-def test_missing_columns_raise_with_add_rows() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_raise_with_add_rows(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """if_missing_columns='raise' should raise ValueError in add_rows."""
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String, "c": pl.Float64}
-    c = PolarsRowCollector(schema=schema, if_missing_columns="raise")
-
+    c = PolarsRowCollector(
+        schema=schema, if_missing_columns="raise", if_extra_columns=if_extra_columns
+    )
     # Adding complete rows should work
     c.add_rows([{"a": 1, "b": "x", "c": 1.0}, {"a": 2, "b": "y", "c": 2.0}])
 
@@ -88,7 +110,10 @@ def test_missing_columns_raise_with_add_rows() -> None:
         c.add_rows([{"a": 3, "b": "z"}])  # missing c
 
 
-def test_missing_columns_raise_lists_all_missing_columns() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_raise_lists_all_missing_columns(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """Error message should list all missing columns."""
     schema: SchemaDict = {
         "a": pl.Int64,
@@ -96,7 +121,9 @@ def test_missing_columns_raise_lists_all_missing_columns() -> None:
         "c": pl.Float64,
         "d": pl.Boolean,
     }
-    c = PolarsRowCollector(schema=schema, if_missing_columns="raise")
+    c = PolarsRowCollector(
+        schema=schema, if_missing_columns="raise", if_extra_columns=if_extra_columns
+    )
 
     with pytest.raises(ValueError) as exc_info:
         c.add_row({"a": 1})  # missing b, c, d
@@ -108,11 +135,15 @@ def test_missing_columns_raise_lists_all_missing_columns() -> None:
     assert "3 missing columns" in error_msg or "missing columns" in error_msg
 
 
-def test_missing_columns_with_no_schema_does_not_raise() -> None:
+@pytest.mark.parametrize("if_extra_columns", ["drop_extra", "raise"])
+def test_missing_columns_with_no_schema_does_not_raise(
+    if_extra_columns: Literal["drop_extra", "raise"],
+) -> None:
     """When schema is inferred, missing columns shouldn't cause issues."""
     c = PolarsRowCollector(
         schema="infer_from_first_chunk",
         if_missing_columns="raise",
+        if_extra_columns=if_extra_columns,
         collect_chunk_size=2,
     )
 
@@ -130,10 +161,17 @@ def test_missing_columns_with_no_schema_does_not_raise() -> None:
 # ============================================================================
 
 
-def test_extra_columns_drop_extra_default_behavior() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_drop_extra(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """Default behavior should drop extra columns silently."""
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String}
-    c = PolarsRowCollector(schema=schema)
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns=if_missing_columns,
+        if_extra_columns="drop_extra",
+    )
 
     c.add_row({"a": 1, "b": "hello", "c": 999})  # c should be dropped
     c.add_row({"a": 2, "b": "world"})
@@ -149,10 +187,17 @@ def test_extra_columns_drop_extra_default_behavior() -> None:
     assert "c" not in df.columns
 
 
-def test_extra_columns_drop_extra_explicit() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_drop_extra_explicit(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """Explicitly setting if_extra_columns to drop_extra."""
     schema: SchemaDict = {"x": pl.Int64}
-    c = PolarsRowCollector(schema=schema, if_extra_columns="drop_extra")
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns=if_missing_columns,
+        if_extra_columns="drop_extra",
+    )
 
     c.add_row({"x": 1, "y": 2, "z": 3})  # y and z should be dropped
 
@@ -164,10 +209,17 @@ def test_extra_columns_drop_extra_explicit() -> None:
     assert df.columns == ["x"]
 
 
-def test_extra_columns_raise_with_add_row() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_raise_with_add_row(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """if_extra_columns='raise' should raise ValueError when extra columns present."""
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String}
-    c = PolarsRowCollector(schema=schema, if_extra_columns="raise")
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns=if_missing_columns,
+        if_extra_columns="raise",
+    )
 
     # Adding a row with exact schema should work
     c.add_row({"a": 1, "b": "test"})
@@ -177,10 +229,15 @@ def test_extra_columns_raise_with_add_row() -> None:
         c.add_row({"a": 2, "b": "test", "c": 3.14})  # c is extra
 
 
-def test_extra_columns_raise_with_add_rows() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_raise_with_add_rows(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """if_extra_columns='raise' should raise ValueError in add_rows."""
     schema: SchemaDict = {"a": pl.Int64}
-    c = PolarsRowCollector(schema=schema, if_extra_columns="raise")
+    c = PolarsRowCollector(
+        schema=schema, if_missing_columns=if_missing_columns, if_extra_columns="raise"
+    )
 
     # Adding rows with exact schema should work
     c.add_rows([{"a": 1}, {"a": 2}])
@@ -190,11 +247,17 @@ def test_extra_columns_raise_with_add_rows() -> None:
         c.add_rows([{"a": 3, "b": "extra"}])
 
 
-def test_extra_columns_raise_lists_all_extra_columns() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_raise_lists_all_extra_columns(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """Error message should list all extra columns."""
     schema: SchemaDict = {"a": pl.Int64}
-    c = PolarsRowCollector(schema=schema, if_extra_columns="raise")
-
+    c = PolarsRowCollector(
+        schema=schema,
+        if_missing_columns=if_missing_columns,
+        if_extra_columns="raise",
+    )
     with pytest.raises(ValueError) as exc_info:
         c.add_row({"a": 1, "b": 2, "c": 3, "d": 4})  # b, c, d are extra
 
@@ -205,10 +268,14 @@ def test_extra_columns_raise_lists_all_extra_columns() -> None:
     assert "3 extra columns" in error_msg or "extra columns" in error_msg
 
 
-def test_extra_columns_with_no_schema_does_not_raise() -> None:
+@pytest.mark.parametrize("if_missing_columns", ["set_missing_to_null", "raise"])
+def test_extra_columns_with_no_schema_does_not_raise(
+    if_missing_columns: Literal["set_missing_to_null", "raise"],
+) -> None:
     """When schema is inferred, extra columns shouldn't cause issues initially."""
     c = PolarsRowCollector(
         schema="infer_from_first_chunk",
+        if_missing_columns=if_missing_columns,
         if_extra_columns="raise",
         collect_chunk_size=2,
     )
@@ -473,7 +540,11 @@ def test_configs_with_lazyframe_output() -> None:
 def test_schema_column_names_are_case_sensitive() -> None:
     """Test that column name matching is case-sensitive."""
     schema: SchemaDict = {"A": pl.Int64, "b": pl.String}
-    c = PolarsRowCollector(schema=schema, if_extra_columns="raise")
+    c = PolarsRowCollector(
+        schema=schema,
+        if_extra_columns="raise",
+        if_missing_columns="set_missing_to_null",
+    )
 
     # lowercase 'a' should be treated as extra column
     with pytest.raises(ValueError, match="extra columns"):
