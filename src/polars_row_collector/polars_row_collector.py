@@ -102,6 +102,7 @@ class PolarsRowCollector:
         self._pl_storage_schema: dict[str, PolarsDataType] | None = None
         self._pl_parse_schema: dict[str, PolarsDataType] | None = None
         self._pl_parse_and_storage_schemas_same: bool
+        self._column_names_set: frozenset[str] | None = None
         self._set_new_schema(pl_storage_schema=schema)
 
         self._accumulated_rows: list[dict[str, Any]] = []
@@ -134,11 +135,13 @@ class PolarsRowCollector:
                 self._pl_parse_schema = _convert_precise_schema_to_python_parse_schema(
                     pl_storage_schema
                 )
+                self._column_names_set = frozenset(pl_storage_schema.keys())
             case _:
                 self._pl_storage_schema = dict(pl_storage_schema)
                 self._pl_parse_schema = _convert_precise_schema_to_python_parse_schema(
                     pl_storage_schema
                 )
+                self._column_names_set = frozenset(pl_storage_schema.keys())
 
         self._pl_parse_and_storage_schemas_same = (
             self._pl_storage_schema == self._pl_parse_schema
@@ -158,37 +161,32 @@ class PolarsRowCollector:
             msg = "Cannot add rows to a finalized PolarsRowCollector."
             raise RuntimeError(msg)
 
-        # Validate missing columns.
-        if (self._if_missing_columns == "raise") and (
-            self._pl_storage_schema is not None
-        ):
-            missing_columns = sorted(
-                set(self._pl_storage_schema.keys()) - set(row.keys())
-            )
-            if missing_columns:
-                msg = (
-                    f"Trying to add a row with {len(missing_columns)} missing columns. "
-                    'PolarsRowCollector is configured with if_missing_columns="raise". '
-                    f"Missing columns: {missing_columns}"
-                )
-                raise ValueError(msg)
-            del missing_columns
+        if self._column_names_set is not None:
+            row_keys_set = frozenset(row.keys())
 
-        # Validate extra columns.
-        if (self._if_extra_columns == "raise") and (
-            self._pl_storage_schema is not None
-        ):
-            extra_columns = sorted(
-                set(row.keys()) - set(self._pl_storage_schema.keys())
-            )
-            if extra_columns:
-                msg = (
-                    f"Trying to add a row with {len(extra_columns)} extra columns. "
-                    'PolarsRowCollector is configured with if_extra_columns="raise". '
-                    f"Extra columns: {extra_columns}"
-                )
-                raise ValueError(msg)
-            del extra_columns
+            # Validate missing columns.
+            if self._if_missing_columns == "raise":
+                missing_columns = self._column_names_set - row_keys_set
+                if missing_columns:
+                    msg = (
+                        f"Trying to add a row with {len(missing_columns)} missing columns. "
+                        'PolarsRowCollector is configured with if_missing_columns="raise". '
+                        f"Missing columns: {sorted(missing_columns)}"
+                    )
+                    raise ValueError(msg)
+                del missing_columns
+
+            # Validate extra columns.
+            if self._if_extra_columns == "raise":
+                extra_columns = row_keys_set - self._column_names_set
+                if extra_columns:
+                    msg = (
+                        f"Trying to add a row with {len(extra_columns)} extra columns. "
+                        'PolarsRowCollector is configured with if_extra_columns="raise". '
+                        f"Extra columns: {sorted(extra_columns)}"
+                    )
+                    raise ValueError(msg)
+                del extra_columns
 
         self._accumulated_rows.append(row)
         if len(self._accumulated_rows) >= self.collect_chunk_size:
