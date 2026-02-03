@@ -189,7 +189,11 @@ def test_missing_columns_are_filled_with_nulls_when_schema_is_set(
         pytest.skip("Skipping very large test on CI with small chunk size for speed.")
 
     schema: SchemaDict = {"a": pl.Int64, "b": pl.String, "c": pl.Float64}
-    c = PolarsRowCollector(schema=schema, collect_chunk_size=chunk_size)
+    c = PolarsRowCollector(
+        schema=schema,
+        collect_chunk_size=chunk_size,
+        if_missing_columns="set_missing_to_null",
+    )
 
     # Add rows missing some columns.
     for _ in range(number_of_row_groups):
