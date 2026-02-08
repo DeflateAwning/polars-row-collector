@@ -37,13 +37,14 @@ df = collector.to_df()
 ```
 
 You can think of `collector` as filling the same niche as the following alternatives:
-    * `list_of_dfs: list[pl.DataFrame]`
-    * `list_of_dicts: list[dict[str, Any]]`, then `pl.from_dicts(list_of_dicts)`
+
+* `list_of_dfs: list[pl.DataFrame]`
+* `list_of_dicts: list[dict[str, Any]]`, then `pl.from_dicts(list_of_dicts)`
 
 ## Features
 
 * Highly performant and memory-optimized.
-    * **93% lower memory usage** compares to a list-of-dicts approach.
+    * **93% lower memory usage** compared to a list-of-dicts approach.
 * Optionally supply a schema for the incoming rows.
 * Thread-safe (when GIL is enabled - default in Python <= 3.15).
 * Configuration arguments for safety vs. performance tradeoffs:
@@ -86,15 +87,15 @@ Final overall time per row: 0.42µs/row
 
 ## Future Features
 
-* Intermediate to-disk storage to temporary parquet files to larger-than-memory collections.
+* Intermediate to-disk storage (temporary parquet files) for larger-than-memory collections.
 * Further optimize appending many rows at once.
-* Read the dataframe so-far, in the middle of gathering rows.
+* Read the DataFrame so-far, in the middle of gathering rows.
 * Documentation.
 
 ## Disclaimer
 
 As the project's description says, this is the "least-bad way" to accomplish this pattern.
 
-If you _can_ implement your code in such a way that you're not collecting individual rows of a dataframe, you are likely better-off doing it that way (e.g., collecting a `list[pl.DataFrame]`).
+If you _can_ implement your code in such a way that you're not collecting individual rows of a DataFrame, you are likely better-off doing it that way (e.g., collecting a `list[pl.DataFrame]`).
 
 However, there are always exceptions to the best practices. In those cases, this library is an ideal choice, and is significantly more memory-efficient than collecting into a `list[dict[str, Any]]` then converting to a DataFrame later.
